@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -10,10 +9,8 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using static Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal.MsQuicNativeMethods;
 
 namespace Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal
@@ -52,7 +49,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal
 
         public async ValueTask<ConnectionContext> AcceptAsync(CancellationToken cancellationToken = default)
         {
-            if (await _acceptConnectionQueue.Reader.WaitToReadAsync())
+            if (await _acceptConnectionQueue.Reader.WaitToReadAsync(cancellationToken))
             {
                 if (_acceptConnectionQueue.Reader.TryRead(out var connection))
                 {

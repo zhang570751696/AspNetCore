@@ -15,7 +15,7 @@ namespace Microsoft.AspNetCore.Hosting
         {
             return hostBuilder.ConfigureServices(services =>
             {
-                services.AddSingleton<IConnectionListenerFactory, MsQuicTransportFactory>();
+                services.AddSingleton<IMultiplexedConnectionListenerFactory, MsQuicTransportFactory>();
             });
         }
 

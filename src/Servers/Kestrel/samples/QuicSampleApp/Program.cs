@@ -5,12 +5,10 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Logging;
-using System.Diagnostics;
-using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 namespace QuicSampleApp
 {
@@ -52,17 +50,16 @@ namespace QuicSampleApp
                          {
                              return async connection =>
                              {
-                                 var streamFeature = connection.Features.Get<IQuicStreamListenerFeature>();
-                                 if (streamFeature != null)
+                                 if (connection is MultiplexedConnectionContext)
                                  {
                                      while (true)
                                      {
-                                         var connectionContext = await streamFeature.AcceptAsync();
-                                         if (connectionContext == null)
+                                         var streamContext = await ((MultiplexedConnectionContext)connection).AcceptAsync();
+                                         if (streamContext == null)
                                          {
                                              return;
                                          }
-                                         _ = next(connectionContext);
+                                         _ = next(streamContext);
                                      }
                                  }
                                  else

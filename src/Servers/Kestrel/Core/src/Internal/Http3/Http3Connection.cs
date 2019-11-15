@@ -7,8 +7,6 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Connections.Abstractions.Features;
-using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http3.QPack;
 
@@ -28,10 +26,16 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http3
 
         // To be used by GO_AWAY
         private long _highestOpenedStreamId; // TODO lock to access
+        private MultiplexedConnectionContext _multiplexedContext;
         //private volatile bool _haveSentGoAway;
 
         public Http3Connection(HttpConnectionContext context)
         {
+            if (!(context.ConnectionContext is MultiplexedConnectionContext))
+            {
+                throw new ArgumentException("Must pass an MultiplexedConnectionContext into Http3Connection.");
+            }
+            _multiplexedContext = (MultiplexedConnectionContext)context.ConnectionContext;
             Context = context;
             DynamicTable = new DynamicTable(0);
         }
@@ -53,8 +57,6 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http3
 
         public async Task ProcessRequestsAsync<TContext>(IHttpApplication<TContext> application)
         {
-            var streamListenerFeature = Context.ConnectionFeatures.Get<IQuicStreamListenerFeature>();
-
             // Start other three unidirectional streams here.
             var settingsStream = CreateSettingsStream(application);
             var encoderStream = CreateEncoderStream(application);
@@ -64,8 +66,8 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http3
             {
                 while (true)
                 {
-                    var connectionContext = await streamListenerFeature.AcceptAsync();
-                    if (connectionContext == null)
+                    var streamContext = await _multiplexedContext.AcceptAsync();
+                    if (streamContext == null)
                     {
                         break;
                     }
@@ -77,23 +79,22 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http3
 
                     var httpConnectionContext = new HttpConnectionContext
                     {
-                        ConnectionId = connectionContext.ConnectionId,
-                        ConnectionContext = connectionContext,
+                        ConnectionId = streamContext.ConnectionId,
+                        ConnectionContext = streamContext,
                         Protocols = Context.Protocols,
                         ServiceContext = Context.ServiceContext,
-                        ConnectionFeatures = connectionContext.Features,
+                        ConnectionFeatures = streamContext.Features,
                         MemoryPool = Context.MemoryPool,
-                        Transport = connectionContext.Transport,
+                        Transport = streamContext.Transport,
                         TimeoutControl = Context.TimeoutControl,
-                        LocalEndPoint = connectionContext.LocalEndPoint as IPEndPoint,
-                        RemoteEndPoint = connectionContext.RemoteEndPoint as IPEndPoint
+                        LocalEndPoint = streamContext.LocalEndPoint as IPEndPoint,
+                        RemoteEndPoint = streamContext.RemoteEndPoint as IPEndPoint
                     };
 
-                    var streamFeature = httpConnectionContext.ConnectionFeatures.Get<IQuicStreamFeature>();
-                    var streamId = streamFeature.StreamId;
+                    var streamId = streamContext.StreamId;
                     HighestStreamId = streamId;
 
-                    if (streamFeature.IsUnidirectional)
+                    if (streamContext.Direction == Direction.UnidirectionalInbound)
                     {
                         var stream = new Http3ControlStream<TContext>(application, this, httpConnectionContext);
                         ThreadPool.UnsafeQueueUserWorkItem(stream, preferLocal: false);
@@ -143,7 +144,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http3
 
         private async ValueTask<Http3ControlStream> CreateNewUnidirectionalStreamAsync<TContext>(IHttpApplication<TContext> application)
         {
-            var connectionContext = await Context.ConnectionFeatures.Get<IQuicCreateStreamFeature>().StartUnidirectionalStreamAsync();
+            var connectionContext = await _multiplexedContext.ConnectAsync(unidirectional: true);
             var httpConnectionContext = new HttpConnectionContext
             {
                 ConnectionId = connectionContext.ConnectionId,

@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -34,7 +35,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic
             _transportContext = new MsQuicTransportContext(lifetime, trace, options.Value);
         }
 
-        public async ValueTask<ConnectionContext> ConnectAsync(EndPoint endPoint, CancellationToken cancellationToken = default)
+        public async ValueTask<ConnectionContext> ConnectAsync(EndPoint endPoint, IFeatureCollection features = null, CancellationToken cancellationToken = default)
         {
             if (!(endPoint is IPEndPoint ipEndPoint))
             {

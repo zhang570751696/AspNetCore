@@ -3,17 +3,16 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Connections.Abstractions.Features;
-using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http.Features;
 using static Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal.MsQuicNativeMethods;
 
 namespace Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal
 {
-    internal class MsQuicConnection : TransportConnection, IQuicStreamListenerFeature, IQuicCreateStreamFeature, IDisposable
+    internal class MsQuicConnection : TransportMultiplexedConnection, IDisposable
     {
         public MsQuicApi _api;
         private bool _disposed;
@@ -40,8 +39,6 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal
             SetIdleTimeout(_context.Options.IdleTimeout);
 
             Features.Set<ITlsConnectionFeature>(new FakeTlsConnectionFeature());
-            Features.Set<IQuicStreamListenerFeature>(this);
-            Features.Set<IQuicCreateStreamFeature>(this);
 
             _log.NewConnection(ConnectionId);
         }
@@ -121,7 +118,13 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal
 
         protected virtual uint HandleEventNewStream(ConnectionEvent connectionEvent)
         {
-            var msQuicStream = new MsQuicStream(_api, this, _context, connectionEvent.StreamFlags, connectionEvent.Data.NewStream.Stream);
+            var msQuicStream = new MsQuicStream(_api,
+                this,
+                _context,
+                connectionEvent.StreamFlags.HasFlag(QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL)
+                    ? Direction.UnidirectionalInbound
+                    : Direction.BidirectionalInbound,
+                connectionEvent.Data.NewStream.Stream);
 
             _acceptQueue.Writer.TryWrite(msQuicStream);
 
@@ -133,9 +136,9 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal
             return MsQuicConstants.Success;
         }
 
-        public async ValueTask<ConnectionContext> AcceptAsync()
+        public override async ValueTask<StreamContext> AcceptAsync(CancellationToken token = default)
         {
-            if (await _acceptQueue.Reader.WaitToReadAsync())
+            if (await _acceptQueue.Reader.WaitToReadAsync(token))
             {
                 if (_acceptQueue.Reader.TryRead(out var stream))
                 {
@@ -146,17 +149,12 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal
             return null;
         }
 
-        public ValueTask<ConnectionContext> StartUnidirectionalStreamAsync()
+        public override ValueTask<StreamContext> ConnectAsync(IFeatureCollection features = null, bool unidirectional = false, CancellationToken token = default)
         {
-            return StartStreamAsync(QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL);
+            return StartStreamAsync(unidirectional ? QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL : QUIC_STREAM_OPEN_FLAG.NONE);
         }
 
-        public ValueTask<ConnectionContext> StartBidirectionalStreamAsync()
-        {
-            return StartStreamAsync(QUIC_STREAM_OPEN_FLAG.NONE);
-        }
-
-        private async ValueTask<ConnectionContext> StartStreamAsync(QUIC_STREAM_OPEN_FLAG flags)
+        private async ValueTask<StreamContext> StartStreamAsync(QUIC_STREAM_OPEN_FLAG flags)
         {
             var stream = StreamOpen(flags);
             await stream.StartAsync();
@@ -244,7 +242,14 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal
                 out streamPtr);
             MsQuicStatusException.ThrowIfFailed(status);
 
-            return new MsQuicStream(_api, this, _context, flags, streamPtr);
+            return new MsQuicStream(
+                _api,
+                this,
+                _context,
+                flags.HasFlag(QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL)
+                    ? Direction.UnidirectionalOutbound
+                    : Direction.BidirectionalOutbound,
+                streamPtr);
         }
 
         public void SetCallbackHandler()

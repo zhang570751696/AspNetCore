@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic;
-using Microsoft.AspNetCore.Connections.Abstractions.Features;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Connections;
 using Microsoft.Extensions.Logging;
@@ -56,8 +55,7 @@ namespace QuicSampleClient
                 var start = Console.ReadLine();
                 Console.WriteLine("Starting");
                 var connectionContext = await _connectionFactory.ConnectAsync(new IPEndPoint(IPAddress.Loopback, 5555));
-                var createStreamFeature = connectionContext.Features.Get<IQuicCreateStreamFeature>();
-                var streamContext = await createStreamFeature.StartBidirectionalStreamAsync();
+                var streamContext = await (connectionContext as MultiplexedConnectionContext).ConnectAsync();
 
                 Console.CancelKeyPress += new ConsoleCancelEventHandler((sender, args) =>
                 {

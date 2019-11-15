@@ -10,14 +10,13 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
-using Microsoft.AspNetCore.Connections.Features;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.Extensions.Logging;
 using static Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal.MsQuicNativeMethods;
 
 namespace Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal
 {
-    internal class MsQuicStream : TransportConnection, IQuicStreamFeature
+    internal class MsQuicStream : TransportStream
     {
         private Task _processingTask;
         private MsQuicConnection _connection;
@@ -34,7 +33,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal
         private MemoryHandle[] _bufferArrays;
         private GCHandle _sendBuffer;
 
-        public MsQuicStream(MsQuicApi api, MsQuicConnection connection, MsQuicTransportContext context, QUIC_STREAM_OPEN_FLAG flags, IntPtr nativeObjPtr)
+        public MsQuicStream(MsQuicApi api, MsQuicConnection connection, MsQuicTransportContext context, Direction direction, IntPtr nativeObjPtr)
         {
             Debug.Assert(connection != null);
 
@@ -57,15 +56,11 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal
 
             var pair = DuplexPipe.CreateConnectionPair(inputOptions, outputOptions);
 
-            Features.Set<IQuicStreamFeature>(this);
+            // TODO populate the ITlsConnectionFeature (requires client certs).
+            var feature = new FakeTlsConnectionFeature();
+            Features.Set<ITlsConnectionFeature>(feature);
 
-            // TODO populate the ITlsConnectionFeature (requires client certs). 
-            Features.Set<ITlsConnectionFeature>(new FakeTlsConnectionFeature());
-            if (flags.HasFlag(QUIC_STREAM_OPEN_FLAG.UNIDIRECTIONAL))
-            {
-                IsUnidirectional = true;
-            }
-
+            Direction = direction;
             Transport = pair.Transport;
             Application = pair.Application;
 
@@ -80,7 +75,7 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal
 
         public bool IsUnidirectional { get; }
 
-        public long StreamId
+        public override long StreamId
         {
             get
             {
@@ -91,7 +86,14 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal
 
                 return _streamId;
             }
+            set
+            {
+                _streamId = value;
+            }
         }
+
+        public MsQuicApi Api { get; set; }
+        public override Direction Direction { get; }
 
         public override string ConnectionId {
             get
@@ -288,8 +290,6 @@ namespace Microsoft.AspNetCore.Server.Kestrel.Transport.MsQuic.Internal
         private void Shutdown(Exception shutdownReason)
         {
         }
-
-        public MsQuicApi Api { get; set; }
 
         internal static uint NativeCallbackHandler(
            IntPtr stream,
