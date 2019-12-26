@@ -13,21 +13,21 @@
       <Uri>https://github.com/aspnet/Blazor</Uri>
       <Sha>d1f3a3db8a379cc887cd6dde0acf77dcd5e16c36</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.AspNetCore.Razor.Language" Version="5.0.0-alpha.1.19619.5">
+    <Dependency Name="Microsoft.AspNetCore.Razor.Language" Version="5.0.0-alpha.1.19623.1">
       <Uri>https://github.com/aspnet/AspNetCore-Tooling</Uri>
-      <Sha>70b716a4a9ad3d55ef9c0542109d148630996880</Sha>
+      <Sha>4130b21726aab368ffc8c0f991d613e36ec5754e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.AspNetCore.Mvc.Razor.Extensions" Version="5.0.0-alpha.1.19619.5">
+    <Dependency Name="Microsoft.AspNetCore.Mvc.Razor.Extensions" Version="5.0.0-alpha.1.19623.1">
       <Uri>https://github.com/aspnet/AspNetCore-Tooling</Uri>
-      <Sha>70b716a4a9ad3d55ef9c0542109d148630996880</Sha>
+      <Sha>4130b21726aab368ffc8c0f991d613e36ec5754e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.Razor" Version="5.0.0-alpha.1.19619.5">
+    <Dependency Name="Microsoft.CodeAnalysis.Razor" Version="5.0.0-alpha.1.19623.1">
       <Uri>https://github.com/aspnet/AspNetCore-Tooling</Uri>
-      <Sha>70b716a4a9ad3d55ef9c0542109d148630996880</Sha>
+      <Sha>4130b21726aab368ffc8c0f991d613e36ec5754e</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.Sdk.Razor" Version="5.0.0-alpha.1.19619.5">
+    <Dependency Name="Microsoft.NET.Sdk.Razor" Version="5.0.0-alpha.1.19623.1">
       <Uri>https://github.com/aspnet/AspNetCore-Tooling</Uri>
-      <Sha>70b716a4a9ad3d55ef9c0542109d148630996880</Sha>
+      <Sha>4130b21726aab368ffc8c0f991d613e36ec5754e</Sha>
     </Dependency>
     <Dependency Name="dotnet-ef" Version="5.0.0-alpha.1.19602.5">
       <Uri>https://github.com/aspnet/EntityFrameworkCore</Uri>
@@ -417,17 +417,17 @@
       <Uri>https://github.com/aspnet/Extensions</Uri>
       <Sha>8792791e713153349025f727ba54983e5aa22617</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.GenAPI" Version="5.0.0-beta.19617.1">
+    <Dependency Name="Microsoft.DotNet.GenAPI" Version="5.0.0-beta.19622.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>66175ebd3756697a3ca515e16cd5ffddc30582cd</Sha>
+      <Sha>163d551438aa5a1fdae12b8405651f894e841211</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="5.0.0-beta.19617.1">
+    <Dependency Name="Microsoft.DotNet.Arcade.Sdk" Version="5.0.0-beta.19622.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>66175ebd3756697a3ca515e16cd5ffddc30582cd</Sha>
+      <Sha>163d551438aa5a1fdae12b8405651f894e841211</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="5.0.0-beta.19617.1">
+    <Dependency Name="Microsoft.DotNet.Helix.Sdk" Version="5.0.0-beta.19622.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>66175ebd3756697a3ca515e16cd5ffddc30582cd</Sha>
+      <Sha>163d551438aa5a1fdae12b8405651f894e841211</Sha>
     </Dependency>
     <Dependency Name="Microsoft.AspNetCore.Testing" Version="5.0.0-alpha.1.19619.1" CoherentParentDependency="Microsoft.AspNetCore.Razor.Language">
       <Uri>https://github.com/aspnet/Extensions</Uri>
